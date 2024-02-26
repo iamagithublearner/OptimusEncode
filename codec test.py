@@ -97,18 +97,21 @@ def encode_files(file_list: list, outputPath):
             print(f"new file is larger , deleting the new file {new_file_path}")
             os.remove(new_file_path)
 
+def main():
+    print("Scanning files")
+    perform_initial_scan()
+    print(f"Total Files scanned successfully: {len(h264_files) + len(hevc_files) + len(other_files)}")
+    print("hevc:", total_size_hevc)
+    print("h264:", total_size_h264)
+    print("others:", total_size_other)
 
-print(f"Total Files scanned successfully: {len(h264_files) + len(hevc_files) + len(other_files)}")
-print("hevc:", total_size_hevc)
-print("h264:", total_size_h264)
-print("others:", total_size_other)
-
-user_encode_choice = input("would you like to encode h264 files?")
-if user_encode_choice.lower() == "yes":
-    print("encoding h264 files")
-    encode_files(h264_file_paths, r'C:\Users\sixsi\PycharmProjects\encode_details\encoded_videos_test')
-else:
-    print("Exiting.")
-    exit()
+    user_encode_choice = input("would you like to encode h264 files?")
+    if user_encode_choice.lower() == "yes":
+        print("encoding h264 files")
+        encode_files(h264_file_paths, r'C:\Users\sixsi\PycharmProjects\encode_details\encoded_videos_test')
+    else:
+        print("Exiting.")
+        exit()
 
 
+main()
