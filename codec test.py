@@ -4,6 +4,8 @@ from secrets import secret
 from pathlib import Path
 from typing import List
 import time
+import humanize
+from tqdm import tqdm
 
 json = secret.json
 
@@ -48,11 +50,10 @@ def encode_files(file_path_list: List[Path], outputPath):
         print(f"Encoding: {file_path.name}")
         new_file_path = outputPath / file_path.name
         convert_video(file_path, new_file_path, json)
-        original_file_sizeMB = int(file_path.stat().st_size / (1024 * 1024))
-        new_file_sizeMB = int(new_file_path.stat().st_size / (1024 * 1024))
-        space_saved = original_file_sizeMB - new_file_sizeMB
-        print(
-            f"Size before encode: {original_file_sizeMB} Size after encode: {new_file_sizeMB} Space saved: {int(space_saved)}")
+        original_file_size = humanize.naturalsize(file_path.stat().st_size)
+        new_file_size = humanize.naturalsize(new_file_path.stat().st_size)
+        space_saved = file_path.stat().st_size - new_file_path.stat().st_size
+        print(f"Size before encode: {original_file_size} Size after encode: {new_file_size} Space saved: {humanize.naturalsize(space_saved)}")
         if space_saved < 0:
             print(f"new file is larger , deleting the new file {new_file_path}")
             new_file_path.unlink()
@@ -66,9 +67,6 @@ class InitialScan:
         self.total_size_otherFiles = 0
         self.error_files = []
 
-    def get_total_size_h264Files(self):
-        return self.total_size_h264Files
-
     def perform_initial_scan(self, folder_path: Path, debug=False):
         if not folder_path.is_dir():
             print("This is not a directory path! \n Exiting.")
@@ -77,7 +75,7 @@ class InitialScan:
         for file_path in folder_path.iterdir():
             file_name = file_path.name
             # Converts file size from bytes to Megabytes
-            file_size = int(file_path.stat().st_size / (1024 * 1024))
+            file_size = file_path.stat().st_size
 
             # Check if it's a regular file (not a directory)
             if file_path.is_file():
@@ -86,22 +84,22 @@ class InitialScan:
                     if codec == "h264":
                         h264_files.append(file_name)
                         h264_file_paths.append(file_path)
-                        self.total_size_h264 += file_size
+                        self.total_size_h264Files += file_size
                     elif codec == "hevc":
                         hevc_files.append(file_name)
                         hevc_file_paths.append(file_path)
-                        self.total_size_hevc += file_size
+                        self.total_size_hevcFiles += file_size
                     else:
                         other_files.append(file_name)
                         other_file_paths.append(file_path)
-                        self.total_size_other += file_size
+                        self.total_size_otherFiles += file_size
                     if debug:
-                        print(f"File: {file_name}, Path: {file_path}, Size: {file_size} MB")
+                        print(f"File: {file_name}, Path: {file_path}, Size: {humanize.naturalsize(file_size)}")
                         print(codec)
 
                 except Exception as e:
                     print('something went wrong')
-                    print(e)
+                    print(f"Error caught: {e}")
                     self.error_files.append(file_name)
 
     def print_error_files(self):
@@ -121,15 +119,17 @@ def main():
     ScanObject.perform_initial_scan(folder_path=FolderPath)
     end_time = time.time()
     elapsed_time = end_time - start_time
+
     if elapsed_time >= 60:
         elapsed_minutes = elapsed_time / 60
-        print(f"Scan completed in{elapsed_minutes:.2f} minutes.")
+        print(f"Scan completed in {elapsed_minutes:.2f} minutes.")
     else:
         print(f"Scan completed in {elapsed_time:.2f} seconds.")
+
     print(f"Total Files scanned successfully: {len(h264_files) + len(hevc_files) + len(other_files)}")
-    print("hevc:", ScanObject.total_size_hevcFiles)
-    print("h264:", ScanObject.total_size_h264Files)
-    print("others:", ScanObject.total_size_otherFiles)
+    print("hevc:", humanize.naturalsize(ScanObject.total_size_hevcFiles))
+    print("h264:", humanize.naturalsize(ScanObject.total_size_h264Files))
+    print("others:", humanize.naturalsize(ScanObject.total_size_otherFiles))
 
     user_encode_choice = input("would you like to encode h264 files?")
     if user_encode_choice.lower() == "yes":
