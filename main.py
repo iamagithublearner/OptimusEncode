@@ -5,19 +5,30 @@ from pathlib import Path
 from typing import List
 import time
 import humanize
+import json
 from tqdm import tqdm
 
-try:
-    from config99 import Secret
 
-    json = Secret.json
-    FolderPath = Secret.folder_path
-    OutputPath = Secret.output_path
-    print("Using Paths from config.py")
-except ImportError:
-    print("Secrets.py was not found.Please provide path for the following files")
-    json = Path(input("JSON file path for video conversion:"))
-    FolderPath = Path(input("Absolute path to scan videos in:"))
+class ProjectPaths:
+    def __init__(self):
+        self.json = Path()
+        self.FolderPath = Path()
+        self.OutputPath = Path()
+
+    def noConfigFile(self):
+        print("Secrets.py was not found.Please provide path for the following files")
+        self.json = Path(input("JSON file path for video conversion:"))
+        self.FolderPath = Path(input("Absolute path to scan videos in:"))
+        self.OutputPath = Path(input("Absolute path for encoded media output:"))
+
+    def usingConfigFile(self, jsonPath: Path):
+        print("Config file was found, using it to set JSON path , Scan path")
+        with open(jsonPath, 'r') as file:
+            secret_data = json.load(file)
+        self.json = secret_data["json_path"]
+        self.FolderPath = secret_data["folder_path"]
+        self.OutputPath = secret_data["output_path"]
+
 
 h264_files = []
 hevc_files = []
@@ -123,18 +134,24 @@ class InitialScan:
 
 
 def main():
+    PathObject = ProjectPaths()
+
+    # Check if JSON file config file is present or not
+    try:
+        json_file_path = Path('Config.json')
+        PathObject.usingConfigFile(json_file_path)
+    except FileNotFoundError:
+        PathObject.noConfigFile()
+
     ScanObject = InitialScan()
     print("Scanning files")
     start_time = time.time()
-    ScanObject.perform_initial_scan(folder_path=FolderPath)
+    ScanObject.perform_initial_scan(folder_path=PathObject.FolderPath)
     end_time = time.time()
     elapsed_time = end_time - start_time
-
-    if elapsed_time >= 60:
-        elapsed_minutes = elapsed_time / 60
-        print(f"Scan completed in {elapsed_minutes:.2f} minutes.")
-    else:
-        print(f"Scan completed in {elapsed_time:.2f} seconds.")
+    elapsed_minutes = elapsed_time // 60
+    elapsed_seconds = elapsed_time - elapsed_minutes * 60
+    print(f"Scan completed in {elapsed_minutes:.2f} minutes, {elapsed_seconds:.2f} seconds.")
 
     print(f"Total Files scanned successfully: {len(h264_files) + len(hevc_files) + len(other_files)}")
     print("hevc:", humanize.naturalsize(ScanObject.total_size_hevcFiles))
@@ -144,7 +161,7 @@ def main():
     user_encode_choice = input("would you like to encode h264 files?")
     if user_encode_choice.lower() == "yes":
         print("encoding h264 files")
-        encode_files(h264_file_paths, OutputPath)
+        encode_files(h264_file_paths, PathObject.OutputPath)
     else:
         print("Exiting.")
         exit()
