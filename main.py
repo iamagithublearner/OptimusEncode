@@ -2,7 +2,6 @@ import subprocess
 from pathlib import Path
 from typing import List
 import time
-import humanize
 import json
 
 try:
@@ -10,6 +9,11 @@ try:
 except ImportError:
     print("Ffmpeg is not installed , please consider using 'pip install ffmpeg' to install ffmpeg module")
     exit(1)
+
+try:
+    import humanize
+except ImportError:
+    print("Humanize module is not installed, please consider using 'pip install humanize' to install humanize module")
 
 
 class ProjectPaths:
