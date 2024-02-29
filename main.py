@@ -1,13 +1,23 @@
 import ffmpeg
 import subprocess
-from secrets import secret
+
 from pathlib import Path
 from typing import List
 import time
 import humanize
 from tqdm import tqdm
 
-json = secret.json
+try:
+    from config99 import Secret
+
+    json = Secret.json
+    FolderPath = Secret.folder_path
+    OutputPath = Secret.output_path
+    print("Using Paths from config.py")
+except ImportError:
+    print("Secrets.py was not found.Please provide path for the following files")
+    json = Path(input("JSON file path for video conversion:"))
+    FolderPath = Path(input("Absolute path to scan videos in:"))
 
 h264_files = []
 hevc_files = []
@@ -53,7 +63,8 @@ def encode_files(file_path_list: List[Path], outputPath):
         original_file_size = humanize.naturalsize(file_path.stat().st_size)
         new_file_size = humanize.naturalsize(new_file_path.stat().st_size)
         space_saved = file_path.stat().st_size - new_file_path.stat().st_size
-        print(f"Size before encode: {original_file_size} Size after encode: {new_file_size} Space saved: {humanize.naturalsize(space_saved)}")
+        print(
+            f"Size before encode: {original_file_size} Size after encode: {new_file_size} Space saved: {humanize.naturalsize(space_saved)}")
         if space_saved < 0:
             print(f"new file is larger , deleting the new file {new_file_path}")
             new_file_path.unlink()
@@ -112,7 +123,6 @@ class InitialScan:
 
 
 def main():
-    FolderPath = secret.folder_path
     ScanObject = InitialScan()
     print("Scanning files")
     start_time = time.time()
@@ -134,7 +144,7 @@ def main():
     user_encode_choice = input("would you like to encode h264 files?")
     if user_encode_choice.lower() == "yes":
         print("encoding h264 files")
-        encode_files(h264_file_paths, Path(r'C:\Users\sixsi\PycharmProjects\encode_details\encoded_videos_test'))
+        encode_files(h264_file_paths, OutputPath)
     else:
         print("Exiting.")
         exit()
