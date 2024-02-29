@@ -1,12 +1,15 @@
-import ffmpeg
 import subprocess
-
 from pathlib import Path
 from typing import List
 import time
 import humanize
 import json
-from tqdm import tqdm
+
+try:
+    import ffmpeg
+except ImportError:
+    print("Ffmpeg is not installed , please consider using 'pip install ffmpeg' to install ffmpeg module")
+    exit(1)
 
 
 class ProjectPaths:
